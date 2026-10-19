@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101827">
+  <title>CrossDrop — Transfer Data</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/"><span class="brand-icon">↗</span><span>CrossDrop</span></a>
+    <span class="secure-label"><span class="status-dot"></span> Jaringan lokal</span>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <div class="eyebrow">TRANSFER ANTARPERANGKAT</div>
+      <h1>Kirim file.<br><span>Tanpa ribet.</span></h1>
+      <p>Kirim teks dan file antar iPhone, Android, dan Windows melalui browser.</p>
+      <div class="platforms"><span>iPhone / iOS</span><span>Android</span><span>Windows</span></div>
+    </section>
+
+    <section class="grid">
+      <article class="card pairing-card">
+        <div class="card-heading">
+          <div><div class="step">01 / TERIMA</div><h2>Siapkan penerima</h2></div>
+          <div class="icon-box">⌁</div>
+        </div>
+        <p class="muted">Buat kode pairing di perangkat yang akan menerima pesan atau file.</p>
+        <button id="createSessionBtn" class="btn btn-primary">Buat kode pairing</button>
+        <div id="receiverCodeWrap" class="code-wrap hidden">
+          <div class="small-label">KODE PAIRING</div>
+          <div class="code-row"><strong id="receiverCode">------</strong><button id="copyCodeBtn" class="btn btn-quiet">Salin</button></div>
+          <p class="hint">Bagikan kode ini atau pindai QR dari perangkat pengirim. Jangan bagikan kepada orang yang tidak dikenal.</p>
+          <button id="showQrBtn" class="btn btn-quiet" type="button" aria-expanded="false">Tampilkan QR Code</button>
+          <div id="qrWrap" class="qr-wrap hidden"><div id="qrCode"></div><p class="hint">Pindai dengan kamera perangkat lain yang berada di jaringan Wi-Fi yang sama.</p></div>
+        </div>
+      </article>
+
+      <article class="card send-card">
+        <div class="card-heading">
+          <div><div class="step">02 / KIRIM</div><h2>Kirim sesuatu</h2></div>
+          <div class="icon-box">↗</div>
+        </div>
+        <label for="pairCode">Kode pairing penerima</label>
+        <input id="pairCode" class="input code-input" inputmode="numeric" maxlength="6" placeholder="Masukkan 6 digit kode">
+        <div class="scanner-actions">
+          <button id="scanQrBtn" class="btn btn-quiet" type="button">Pindai QR dengan kamera</button>
+          <button id="scanQrImageBtn" class="btn btn-quiet" type="button">Pilih gambar QR</button>
+          <input id="qrImageInput" type="file" accept="image/*" class="hidden">
+        </div>
+        <div id="scannerPanel" class="scanner-panel hidden">
+          <div id="qrScannerRegion"></div>
+          <p id="scannerHint" class="hint">Arahkan kamera ke QR Code CrossDrop.</p>
+          <button id="stopScannerBtn" class="btn btn-quiet btn-small" type="button">Tutup pemindai</button>
+        </div>
+        <label for="senderName">Nama perangkat (opsional)</label>
+        <input id="senderName" class="input" maxlength="80" placeholder="Contoh: iPhone Irpan">
+
+        <div class="tabs">
+          <button class="tab active" data-tab="textPanel">Teks</button>
+          <button class="tab" data-tab="filePanel">File</button>
+        </div>
+
+        <div id="textPanel" class="tab-panel">
+          <label for="messageText">Pesan yang ingin dikirim</label>
+          <textarea id="messageText" class="input textarea" maxlength="20000" placeholder="Tulis pesan di sini..."></textarea>
+          <button id="sendTextBtn" class="btn btn-primary full">Kirim teks</button>
+        </div>
+
+        <div id="filePanel" class="tab-panel hidden">
+          <label for="fileInput">Pilih satu atau beberapa file</label>
+          <input id="fileInput" class="file-input" type="file" multiple accept=".txt,.pdf,.png,.jpg,.jpeg,.gif,.webp,.mp4,.mov,.webm,.zip,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv">
+          <div id="selectedFiles" class="hint">Maksimal 30 file, 100 MiB per file dan 500 MiB total per pengiriman. File dikirim apa adanya tanpa kompresi atau perubahan kualitas.</div>
+          <button id="sendFileBtn" class="btn btn-primary full">Kirim file terpilih</button>
+        </div>
+        <div id="uploadProgressWrap" class="progress-wrap hidden" aria-live="polite">
+          <div class="progress-label"><span id="progressLabel">Mengirim...</span><span id="progressPercent">0%</span></div>
+          <progress id="uploadProgress" value="0" max="100"></progress>
+          <p id="progressDetail" class="hint">Jangan tutup halaman selama transfer berlangsung.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="card inbox-card">
+      <div class="section-heading">
+        <div><div class="step">03 / INBOX</div><h2>Permintaan masuk</h2></div>
+        <button id="refreshBtn" class="btn btn-quiet">Muat ulang</button>
+      </div>
+      <p class="muted">Transfer yang masuk ke kode pairing ini akan muncul di sini. Penerima harus menyetujui sebelum mengunduh.</p>
+      <div id="inboxList" class="empty-state">Buat kode pairing untuk mulai menerima transfer.</div>
+    </section>
+
+    <section class="card history-card">
+      <div class="section-heading"><div><div class="step">04 / AKTIVITAS</div><h2>Riwayat transfer</h2></div></div>
+      <div id="historyList" class="empty-state">Riwayat transfer akan ditampilkan di sini.</div>
+    </section>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <footer>CrossDrop · Proyek Sistem Paralel dan Terdistribusi</footer>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" referrerpolicy="no-referrer"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" referrerpolicy="no-referrer"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+# CrossDrop menggunakan Python standard library; tidak ada paket tambahan yang wajib diinstal.
