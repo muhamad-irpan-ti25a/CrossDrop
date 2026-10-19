@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#101827">
   <title>CrossDrop — Transfer Data</title>
   <link rel="stylesheet" href="/static/css/style.css">
@@ -97,6 +97,15 @@
       <div id="historyList" class="empty-state">Riwayat transfer akan ditampilkan di sini.</div>
     </section>
 
+    <div id="textPreviewModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="textPreviewTitle">
+      <div class="modal-backdrop" data-close-preview="true"></div>
+      <section class="modal-card">
+        <div class="section-heading"><h2 id="textPreviewTitle">Pratinjau pesan teks</h2><button id="closeTextPreviewBtn" class="btn btn-quiet" type="button" aria-label="Tutup pratinjau">Tutup</button></div>
+        <div id="textPreviewMeta" class="item-meta"></div>
+        <pre id="textPreviewContent" class="text-preview-content"></pre>
+        <button id="downloadPreviewTextBtn" class="btn btn-primary full" type="button">Unduh sebagai TXT</button>
+      </section>
+    </div>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <footer>CrossDrop · Proyek Sistem Paralel dan Terdistribusi</footer>
   </main>

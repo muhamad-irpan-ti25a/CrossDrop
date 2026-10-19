@@ -63,3 +63,8 @@ Server HTTP dibuat menggunakan Python socket TCP, bukan Flask atau Node.js.
 - File upload, sesi pairing, dan riwayat saat ini disimpan pada filesystem/memori instance. Render Free dapat tidur/restart dan filesystem bersifat ephemeral, sehingga file dan sesi bisa hilang. Gunakan hanya untuk demo, jangan untuk penyimpanan permanen atau file rahasia.
 - QR scanner dan QR generator memuat pustaka dari CDN; perlu koneksi internet.
 - Link publik bisa diakses siapa pun yang mengetahuinya. Jangan mengirim file sensitif; pairing code enam digit saja belum cukup sebagai perlindungan untuk layanan publik.
+
+## Pembaruan UI: pratinjau teks dan tampilan HP
+- Pesan teks yang sudah disetujui dapat dibuka melalui tombol **Pratinjau teks** dalam dialog, lalu diunduh sebagai `pesan.txt` jika diperlukan.
+- Ukuran font kolom input diatur minimal 16px agar Safari iPhone tidak otomatis memperbesar tampilan saat kolom difokuskan.
+- Jika sudah deploy di Render, unggah perubahan ini ke repository GitHub lalu lakukan commit dan push. Render akan melakukan deploy ulang otomatis jika Auto-Deploy aktif.

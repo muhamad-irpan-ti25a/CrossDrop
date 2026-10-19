@@ -2,6 +2,7 @@ const $ = (id) => document.getElementById(id);
 let activeCode = "";
 let pollTimer = null;
 let seenItems = new Set();
+let previewTextItem = null;
 
 function toast(message) {
   const el = $("toast");
@@ -184,13 +185,42 @@ function renderInbox(items) {
     const actions = item.status === "Menunggu persetujuan"
       ? `<div class="item-actions"><button class="btn btn-primary btn-small" data-action="accept" data-id="${item.id}">Setujui</button><button class="btn btn-quiet btn-small" data-action="reject" data-id="${item.id}">Tolak</button></div>`
       : item.status === "Disetujui"
-        ? `<div class="item-actions">${item.type === "file" && (String(item.mime || "").startsWith("image/") || String(item.mime || "").startsWith("video/") || item.mime === "application/pdf" || String(item.mime || "").startsWith("text/")) ? `<button class="btn btn-quiet btn-small" data-action="preview" data-id="${item.id}">Pratinjau</button>` : ""}<button class="btn btn-primary btn-small" data-action="download" data-id="${item.id}" data-type="${item.type}" data-name="${item.type === "text" ? "pesan.txt" : escapeHtml(item.name)}">Unduh file</button></div>`
+        ? `<div class="item-actions">${item.type === "text" ? `<button class="btn btn-quiet btn-small" data-action="preview-text" data-id="${item.id}">Pratinjau teks</button>` : (String(item.mime || "").startsWith("image/") || String(item.mime || "").startsWith("video/") || item.mime === "application/pdf" || String(item.mime || "").startsWith("text/")) ? `<button class="btn btn-quiet btn-small" data-action="preview" data-id="${item.id}">Pratinjau</button>` : ""}<button class="btn btn-primary btn-small" data-action="download" data-id="${item.id}" data-type="${item.type}" data-name="${item.type === "text" ? "pesan.txt" : escapeHtml(item.name)}">${item.type === "text" ? "Unduh TXT" : "Unduh file"}</button></div>`
         : "";
     return `<div class="transfer-item">
       <div class="item-main"><div class="item-name">${item.type === "text" ? "✉ " : "▧ "}${escapeHtml(item.name)}</div>
       <div class="item-meta">Dari ${escapeHtml(item.sender)} · ${formatSize(item.size)} · ${formatTime(item.created)}</div>
       ${detail}<span class="status ${statusClass(item.status)}">${status}</span></div>${actions}</div>`;
   }).join("");
+}
+
+function openTextPreview(item) {
+  previewTextItem = item;
+  $("textPreviewTitle").textContent = item.name || "Pratinjau pesan teks";
+  $("textPreviewMeta").textContent = `Dari ${item.sender || "Perangkat pengirim"} · ${formatSize(item.size || 0)} · ${formatTime(item.created || Date.now() / 1000)}`;
+  $("textPreviewContent").textContent = item.text || "";
+  $("textPreviewModal").classList.remove("hidden");
+  document.body.classList.add("modal-open");
+  $("closeTextPreviewBtn").focus();
+}
+
+function closeTextPreview() {
+  $("textPreviewModal").classList.add("hidden");
+  document.body.classList.remove("modal-open");
+  previewTextItem = null;
+}
+
+function downloadTextPreview() {
+  if (!previewTextItem) return;
+  const blob = new Blob([previewTextItem.text || ""], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "pesan.txt";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
 async function decide(itemId, decision) {
@@ -389,8 +419,24 @@ $("inboxList").addEventListener("click", event => {
   const action = button.dataset.action;
   if (action === "accept" || action === "reject") decide(button.dataset.id, action);
   if (action === "download") downloadItem(button.dataset.id, button.dataset.name || "pesan.txt");
+  if (action === "preview-text") {
+    const code = activeCode || $("pairCode").value.trim();
+    api(`/api/inbox?code=${encodeURIComponent(code)}`).then(data => {
+      const item = data.items.find(entry => entry.id === button.dataset.id && entry.type === "text" && entry.status === "Disetujui");
+      if (item) openTextPreview(item); else toast("Pesan tidak ditemukan atau belum disetujui.");
+    }).catch(err => toast(err.message));
+  }
   if (action === "preview") { const code = activeCode || $("pairCode").value.trim(); window.open(`/api/preview/${encodeURIComponent(button.dataset.id)}?code=${encodeURIComponent(code)}`, "_blank", "noopener"); }
 });
+$("closeTextPreviewBtn").addEventListener("click", closeTextPreview);
+$("downloadPreviewTextBtn").addEventListener("click", downloadTextPreview);
+$("textPreviewModal").addEventListener("click", event => {
+  if (event.target.dataset.closePreview === "true") closeTextPreview();
+});
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && !$("textPreviewModal").classList.contains("hidden")) closeTextPreview();
+});
+
 $("pairCode").addEventListener("input", () => {
   $("pairCode").value = $("pairCode").value.replace(/\D/g, "").slice(0, 6);
 });

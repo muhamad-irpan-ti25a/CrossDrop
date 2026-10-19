@@ -81,3 +81,15 @@ footer{text-align:center;color:#64758d;font-size:11px;padding:32px 0 8px}
 #qrScannerRegion video{width:100%!important;border-radius:10px}
 #qrScannerRegion img{max-width:100%}
 .scanner-panel .hint{text-align:center}
+
+
+/* Mobile usability: iOS Safari zooms focused fields when their font is below 16px. */
+.input, .file-input, input, textarea, select { font-size: 16px; }
+.text-preview-content{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;max-height:55vh;overflow:auto;background:#0b1422;border:1px solid var(--line);border-radius:12px;padding:15px;color:var(--text);font:14px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;margin:14px 0 0}
+.modal{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:18px}
+.modal-backdrop{position:absolute;inset:0;background:#02060dcc;backdrop-filter:blur(5px)}
+.modal-card{position:relative;z-index:1;width:min(620px,100%);max-height:90vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 24px 80px #0008}
+.modal-card .section-heading{align-items:center}
+.modal-card h2{margin:0;font-size:20px}
+body.modal-open{overflow:hidden}
+@media(max-width:720px){.input,.file-input,input,textarea,select{font-size:16px}.modal{padding:10px}.modal-card{padding:16px;max-height:94vh}.text-preview-content{font-size:14px;max-height:58vh}}
