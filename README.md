@@ -68,3 +68,10 @@ Server HTTP dibuat menggunakan Python socket TCP, bukan Flask atau Node.js.
 - Pesan teks yang sudah disetujui dapat dibuka melalui tombol **Pratinjau teks** dalam dialog, lalu diunduh sebagai `pesan.txt` jika diperlukan.
 - Ukuran font kolom input diatur minimal 16px agar Safari iPhone tidak otomatis memperbesar tampilan saat kolom difokuskan.
 - Jika sudah deploy di Render, unggah perubahan ini ke repository GitHub lalu lakukan commit dan push. Render akan melakukan deploy ulang otomatis jika Auto-Deploy aktif.
+
+## Fitur Inbox terbaru
+- Tombol **Setujui semua** dan **Tolak semua** hanya memproses item yang masih menunggu persetujuan.
+- Item yang disetujui diberi tanda `✓ Sudah disetujui` dan aksen warna hijau agar mudah dibedakan.
+- Tombol **Unduh semua yang disetujui** memasukkan tiap file sebagai unduhan terpisah.
+- Antrean unduhan menjalankan maksimal 5 unduhan bersamaan; ketika satu selesai, file berikutnya dalam antrean mulai otomatis.
+- Browser dapat menampilkan peringatan izin untuk beberapa unduhan. Izinkan unduhan dari situs jika browser meminta.

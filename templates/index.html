@@ -89,6 +89,12 @@
         <button id="refreshBtn" class="btn btn-quiet">Muat ulang</button>
       </div>
       <p class="muted">Transfer yang masuk ke kode pairing ini akan muncul di sini. Penerima harus menyetujui sebelum mengunduh.</p>
+      <div class="inbox-toolbar">
+        <button id="approveAllBtn" class="btn btn-primary btn-small" type="button">Setujui semua</button>
+        <button id="rejectAllBtn" class="btn btn-danger btn-small" type="button">Tolak semua</button>
+        <button id="downloadAllBtn" class="btn btn-quiet btn-small" type="button">Unduh semua yang disetujui</button>
+      </div>
+      <p id="bulkStatus" class="hint" aria-live="polite">Unduhan massal diproses maksimal 5 file bersamaan. Saat satu file selesai, antrean melanjutkan file berikutnya.</p>
       <div id="inboxList" class="empty-state">Buat kode pairing untuk mulai menerima transfer.</div>
     </section>
 

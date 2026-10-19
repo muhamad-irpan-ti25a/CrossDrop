@@ -3,6 +3,10 @@ let activeCode = "";
 let pollTimer = null;
 let seenItems = new Set();
 let previewTextItem = null;
+const downloadQueue = [];
+let activeDownloads = 0;
+const MAX_CONCURRENT_DOWNLOADS = 5;
+const downloadStates = new Map();
 
 function toast(message) {
   const el = $("toast");
@@ -171,6 +175,11 @@ async function refreshInbox() {
 
 function renderInbox(items) {
   const list = $("inboxList");
+  const waiting = items.filter(item => item.status === "Menunggu persetujuan").length;
+  const approved = items.filter(item => item.status === "Disetujui").length;
+  $("approveAllBtn").disabled = waiting === 0;
+  $("rejectAllBtn").disabled = waiting === 0;
+  $("downloadAllBtn").disabled = approved === 0;
   if (!items.length) {
     list.className = "empty-state";
     list.textContent = "Belum ada transfer masuk. Biarkan halaman ini terbuka.";
@@ -179,18 +188,23 @@ function renderInbox(items) {
   list.className = "";
   list.innerHTML = items.map(item => {
     const status = escapeHtml(item.status);
+    const state = downloadStates.get(item.id);
+    const rowClass = item.status === "Disetujui" ? "is-approved" : item.status === "Ditolak" ? "is-rejected" : state === "downloading" ? "is-downloading" : "";
     const detail = item.type === "text"
       ? `<div class="item-meta message-preview">${escapeHtml(item.text)}</div>`
       : `<div class="item-meta">${formatSize(item.size)} · ${escapeHtml(item.mime || "File")}</div>`;
+    const marker = item.status === "Disetujui"
+      ? `<span class="status approved-mark">✓ Sudah disetujui</span>`
+      : item.status === "Ditolak" ? `<span class="status bad">✕ Ditolak</span>` : "";
     const actions = item.status === "Menunggu persetujuan"
-      ? `<div class="item-actions"><button class="btn btn-primary btn-small" data-action="accept" data-id="${item.id}">Setujui</button><button class="btn btn-quiet btn-small" data-action="reject" data-id="${item.id}">Tolak</button></div>`
+      ? `<div class="item-actions"><button class="btn btn-primary btn-small" data-action="accept" data-id="${item.id}">Setujui</button><button class="btn btn-danger btn-small" data-action="reject" data-id="${item.id}">Tolak</button></div>`
       : item.status === "Disetujui"
-        ? `<div class="item-actions">${item.type === "text" ? `<button class="btn btn-quiet btn-small" data-action="preview-text" data-id="${item.id}">Pratinjau teks</button>` : (String(item.mime || "").startsWith("image/") || String(item.mime || "").startsWith("video/") || item.mime === "application/pdf" || String(item.mime || "").startsWith("text/")) ? `<button class="btn btn-quiet btn-small" data-action="preview" data-id="${item.id}">Pratinjau</button>` : ""}<button class="btn btn-primary btn-small" data-action="download" data-id="${item.id}" data-type="${item.type}" data-name="${item.type === "text" ? "pesan.txt" : escapeHtml(item.name)}">${item.type === "text" ? "Unduh TXT" : "Unduh file"}</button></div>`
+        ? `<div class="item-actions">${item.type === "text" ? `<button class="btn btn-quiet btn-small" data-action="preview-text" data-id="${item.id}">Pratinjau teks</button>` : (String(item.mime || "").startsWith("image/") || String(item.mime || "").startsWith("video/") || item.mime === "application/pdf" || String(item.mime || "").startsWith("text/")) ? `<button class="btn btn-quiet btn-small" data-action="preview" data-id="${item.id}">Pratinjau</button>` : ""}<button class="btn btn-primary btn-small" data-action="download" data-id="${item.id}" data-type="${item.type}" data-name="${item.type === "text" ? "pesan.txt" : escapeHtml(item.name)}">${state === "downloading" ? "Sedang mengunduh…" : state === "done" ? "Unduh lagi" : item.type === "text" ? "Unduh TXT" : "Unduh file"}</button></div>`
         : "";
-    return `<div class="transfer-item">
+    return `<div class="transfer-item ${rowClass}">
       <div class="item-main"><div class="item-name">${item.type === "text" ? "✉ " : "▧ "}${escapeHtml(item.name)}</div>
       <div class="item-meta">Dari ${escapeHtml(item.sender)} · ${formatSize(item.size)} · ${formatTime(item.created)}</div>
-      ${detail}<span class="status ${statusClass(item.status)}">${status}</span></div>${actions}</div>`;
+      ${detail}<span class="status ${statusClass(item.status)}">${status}</span> ${marker}${state === "downloading" ? `<div class="item-meta">⏬ Sedang diunduh dalam antrean</div>` : state === "done" ? `<div class="item-meta">✓ Unduhan selesai dimulai</div>` : ""}</div>${actions}</div>`;
   }).join("");
 }
 
@@ -235,8 +249,8 @@ async function decide(itemId, decision) {
   } catch (err) { toast(err.message); }
 }
 
-function downloadItem(itemId, filename = "file-unduhan") {
-  const code = activeCode || $("pairCode").value.trim();
+function downloadItem(itemId, filename = "file-unduhan", options = {}) {
+  const code = options.code || activeCode || $("pairCode").value.trim();
   if (!/^\d{6}$/.test(code)) return toast("Kode pairing tidak valid.");
   const xhr = new XMLHttpRequest();
   const progressWrap = $("uploadProgressWrap");
@@ -266,6 +280,7 @@ function downloadItem(itemId, filename = "file-unduhan") {
         try { message = JSON.parse(text).error || message; } catch (_) { if (text) message = text; }
         $("progressLabel").textContent = "Unduhan gagal";
         toast(message);
+        if (options.onComplete) options.onComplete(false);
       });
       return;
     }
@@ -282,13 +297,88 @@ function downloadItem(itemId, filename = "file-unduhan") {
     $("uploadProgress").value = 100;
     $("progressDetail").textContent = `${formatSize(xhr.response.size)} siap disimpan oleh browser.`;
     toast("File diterima. Browser akan menyimpan atau meminta lokasi penyimpanan.");
+    if (options.onComplete) options.onComplete(true);
   };
   xhr.onerror = () => {
     $("progressLabel").textContent = "Koneksi unduhan gagal";
     $("progressDetail").textContent = "Periksa koneksi Wi-Fi dan coba lagi.";
     toast("Tidak dapat mengunduh file dari server.");
+    if (options.onComplete) options.onComplete(false);
   };
   xhr.send();
+}
+
+async function decideAll(decision) {
+  const code = activeCode || $("pairCode").value.trim();
+  if (!/^\d{6}$/.test(code)) return toast("Kode pairing tidak valid.");
+  const button = decision === "accept" ? $("approveAllBtn") : $("rejectAllBtn");
+  button.disabled = true;
+  try {
+    const data = await api(`/api/inbox?code=${encodeURIComponent(code)}`);
+    const waiting = data.items.filter(item => item.status === "Menunggu persetujuan");
+    if (!waiting.length) return toast("Tidak ada transfer yang menunggu persetujuan.");
+    let done = 0;
+    for (const item of waiting) {
+      try {
+        await api(`/api/decision/${encodeURIComponent(item.id)}`, {
+          method: "POST", headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ code, decision })
+        });
+        done++;
+      } catch (_) { /* item mungkin telah diproses dari perangkat lain */ }
+    }
+    toast(`${decision === "accept" ? "Disetujui" : "Ditolak"} ${done} dari ${waiting.length} item.`);
+    await refreshInbox();
+  } catch (err) { toast(err.message); }
+  finally { button.disabled = false; }
+}
+
+function startQueuedDownload(item, code) {
+  activeDownloads++;
+  downloadStates.set(item.id, "downloading");
+  refreshInbox();
+  downloadItem(item.id, item.type === "text" ? "pesan.txt" : item.name, {
+    code,
+    onComplete: success => {
+      downloadStates.set(item.id, success ? "done" : "failed");
+      activeDownloads--;
+      updateQueueStatus();
+      refreshInbox();
+      processDownloadQueue();
+    }
+  });
+}
+
+function processDownloadQueue() {
+  while (activeDownloads < MAX_CONCURRENT_DOWNLOADS && downloadQueue.length) {
+    const next = downloadQueue.shift();
+    if (downloadStates.get(next.id) === "done") continue;
+    startQueuedDownload(next.item, next.code);
+  }
+  updateQueueStatus();
+}
+
+function updateQueueStatus() {
+  const status = $("bulkStatus");
+  if (downloadQueue.length || activeDownloads) {
+    status.textContent = `Unduhan aktif: ${activeDownloads}/${MAX_CONCURRENT_DOWNLOADS} · antrean berikutnya: ${downloadQueue.length} file. Saat satu selesai, file berikutnya otomatis dimulai.`;
+  } else {
+    status.textContent = "Unduhan massal diproses maksimal 5 file bersamaan. Saat satu file selesai, antrean melanjutkan file berikutnya.";
+  }
+}
+
+async function downloadAllApproved() {
+  const code = activeCode || $("pairCode").value.trim();
+  if (!/^\d{6}$/.test(code)) return toast("Kode pairing tidak valid.");
+  try {
+    const data = await api(`/api/inbox?code=${encodeURIComponent(code)}`);
+    const approved = data.items.filter(item => item.status === "Disetujui" && downloadStates.get(item.id) !== "downloading");
+    const fresh = approved.filter(item => downloadStates.get(item.id) !== "done" && !downloadQueue.some(entry => entry.id === item.id));
+    if (!fresh.length) return toast("Tidak ada file disetujui yang belum masuk antrean unduhan.");
+    fresh.forEach(item => downloadQueue.push({ id: item.id, item, code }));
+    toast(`${fresh.length} file ditambahkan ke antrean unduhan.`);
+    processDownloadQueue();
+  } catch (err) { toast(err.message); }
 }
 
 async function refreshHistory(code) {
@@ -380,6 +470,9 @@ $("createSessionBtn").addEventListener("click", createSession);
 $("sendTextBtn").addEventListener("click", sendText);
 $("sendFileBtn").addEventListener("click", sendFile);
 $("refreshBtn").addEventListener("click", refreshInbox);
+$("approveAllBtn").addEventListener("click", () => decideAll("accept"));
+$("rejectAllBtn").addEventListener("click", () => decideAll("reject"));
+$("downloadAllBtn").addEventListener("click", downloadAllApproved);
 function renderQr() {
   if (!activeCode) return toast("Buat kode pairing terlebih dahulu.");
   if (typeof QRCode === "undefined") return toast("QR Code perlu koneksi internet untuk memuat pustaka QR.");

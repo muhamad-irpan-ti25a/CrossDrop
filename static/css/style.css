@@ -93,3 +93,12 @@ footer{text-align:center;color:#64758d;font-size:11px;padding:32px 0 8px}
 .modal-card h2{margin:0;font-size:20px}
 body.modal-open{overflow:hidden}
 @media(max-width:720px){.input,.file-input,input,textarea,select{font-size:16px}.modal{padding:10px}.modal-card{padding:16px;max-height:94vh}.text-preview-content{font-size:14px;max-height:58vh}}
+
+/* CrossDrop bulk inbox actions */
+.inbox-toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 8px}
+.btn-danger{background:#512936;color:#ffdce3;border:1px solid #874253}
+.status.approved-mark{background:#163d35;color:#83edcb;font-weight:700}
+.transfer-item.is-approved{border-left:3px solid #64d9b0;padding-left:12px}
+.transfer-item.is-rejected{border-left:3px solid #dc7186;padding-left:12px}
+.transfer-item.is-downloading{border-left:3px solid #7da9ff;padding-left:12px}
+@media(max-width:520px){.inbox-toolbar .btn{flex:1 1 calc(50% - 8px);min-height:42px}.inbox-toolbar #downloadAllBtn{flex-basis:100%}}
