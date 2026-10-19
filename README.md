@@ -49,3 +49,17 @@ Server HTTP dibuat menggunakan Python socket TCP, bukan Flask atau Node.js.
 - Jika kamera tidak tersedia karena halaman dibuka melalui HTTP pada IP lokal, tekan **Pilih gambar QR** dan pilih screenshot/foto QR.
 - Pemindai menggunakan pustaka JavaScript dari CDN, sehingga pemuatan pustaka membutuhkan internet.
 - Browser modern umumnya hanya mengizinkan akses kamera pada konteks aman (HTTPS atau localhost). Untuk memindai kamera dari HP melalui IP lokal, siapkan HTTPS untuk server; opsi memilih gambar QR menjadi alternatif tanpa akses kamera.
+
+
+## Deploy Render (Free)
+1. Upload folder proyek ini ke repository GitHub.
+2. Di Render pilih New > Web Service, lalu hubungkan repository.
+3. Runtime: Python; Build Command: `pip install -r requirements.txt`; Start Command: `python server.py`; Instance Type: Free.
+4. Setelah deploy, buka URL `https://NAMA-APP.onrender.com`. HTTPS dikelola Render, sehingga browser yang mendukung izin kamera dapat menggunakan QR scanner.
+
+### Batasan hosting gratis
+- Pengiriman beberapa file didukung: maksimal 30 file, maksimal 100 MiB per file, dan total 100 MiB per kiriman pada konfigurasi hosted ini.
+- Server membaca request upload ke memori; batas total dibuat 120 MiB agar tidak menerima body terlalu besar pada instance gratis. Jangan menaikkan batas tanpa mengubah implementasi menjadi streaming/chunked upload.
+- File upload, sesi pairing, dan riwayat saat ini disimpan pada filesystem/memori instance. Render Free dapat tidur/restart dan filesystem bersifat ephemeral, sehingga file dan sesi bisa hilang. Gunakan hanya untuk demo, jangan untuk penyimpanan permanen atau file rahasia.
+- QR scanner dan QR generator memuat pustaka dari CDN; perlu koneksi internet.
+- Link publik bisa diakses siapa pun yang mengetahuinya. Jangan mengirim file sensitif; pairing code enam digit saja belum cukup sebagai perlindungan untuk layanan publik.

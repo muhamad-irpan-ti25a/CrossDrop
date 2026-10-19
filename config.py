@@ -1,8 +1,10 @@
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
 HOST = "0.0.0.0"
-PORT = 8765
+PORT = int(os.environ.get("PORT", "8765"))
+MAX_REQUEST_SIZE = 120 * 1024 * 1024  # 120 MiB total request cap for hosted free instances
 
 STORAGE_DIR = BASE_DIR / "storage"
 UPLOAD_DIR = STORAGE_DIR / "uploads"

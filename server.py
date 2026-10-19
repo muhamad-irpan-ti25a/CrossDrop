@@ -1,5 +1,6 @@
 import json
 import mimetypes
+import os
 import secrets
 import socket
 import threading
@@ -10,7 +11,7 @@ from email.policy import default
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs, unquote
 
-from config import HOST, PORT, STORAGE_DIR, UPLOAD_DIR, HISTORY_FILE, MAX_FILE_SIZE, ALLOWED_EXTENSIONS
+from config import HOST, PORT, STORAGE_DIR, UPLOAD_DIR, HISTORY_FILE, MAX_FILE_SIZE, MAX_REQUEST_SIZE, ALLOWED_EXTENSIONS
 
 MIME_TYPES = {
     ".html": "text/html; charset=utf-8",
@@ -214,8 +215,8 @@ def route(client, method, target, headers, body):
         if len(uploads) > 30:
             return send_json(client, 413, {"ok": False, "error": "Maksimal 30 file sekali kirim."})
         total_size = sum(len(payload) for _, payload, _ in uploads)
-        if total_size > 500 * 1024 * 1024:
-            return send_json(client, 413, {"ok": False, "error": "Total ukuran sekali kirim maksimal 500 MiB."})
+        if total_size > 100 * 1024 * 1024:
+            return send_json(client, 413, {"ok": False, "error": "Total ukuran sekali kirim maksimal 100 MiB pada konfigurasi hosting gratis."})
         for filename, payload, mime in uploads:
             if len(payload) > MAX_FILE_SIZE:
                 return send_json(client, 413, {"ok": False, "error": f"File {filename} melebihi batas 100 MiB."})
@@ -389,7 +390,10 @@ def main():
     print("=" * 60)
     print(" CrossDrop - Aplikasi Transfer Data")
     print(f" Server lokal : http://127.0.0.1:{PORT}")
-    print(f" Akses Wi-Fi  : http://{local_ip}:{PORT}")
+    if "RENDER" not in os.environ:
+        print(f" Akses Wi-Fi  : http://{local_ip}:{PORT}")
+    else:
+        print(" Mode hosting Render aktif; gunakan URL HTTPS dari dashboard Render.")
     print(" Pastikan perangkat lain terhubung ke Wi-Fi/LAN yang sama.")
     print(" Jika diminta, izinkan Python di Windows Defender Firewall (Private network).")
     print(" Tekan Ctrl+C untuk menghentikan server.")
